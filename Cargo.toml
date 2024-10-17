@@ -1,0 +1,14 @@
+[package]
+categories = ["embedded", "hardware-support", "no-std"]
+description = "A Rust implementation of the 1-Wire protocol"
+edition = "2021"
+keywords = ["1wire", "ds18b20", "embedded", "embedded-hal-driver", "onewire"]
+name = "ds18b20"
+readme = "README.adoc"
+version = "0.0.12"
+
+[dependencies]
+bitflags = "2.6.0"
+embedded-hal = "1.0.0"
+embedded-hal-async = "1.0.0"
+thiserror = { version = "1.0.50", package = "thiserror-core", default-features = false }
