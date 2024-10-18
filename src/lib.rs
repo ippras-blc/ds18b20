@@ -1,7 +1,6 @@
 //! Implementation of the 1-Wire protocol.
 
-#![no_std]
-#![feature(error_in_core)]
+// #![no_std]
 
 pub use self::{
     commands::{memory::MemoryCommands, rom::RomCommands},
