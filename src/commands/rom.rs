@@ -1,4 +1,4 @@
-use crate::{error::Ds18b20Error, Driver, Error, Rom};
+use crate::{error::Error, Driver, AError, Rom};
 use embedded_hal::{
     delay::DelayNs,
     digital::{ErrorType, InputPin, OutputPin},
@@ -25,7 +25,7 @@ pub trait RomCommands<T: ErrorType> {
     /// is present on the bus, a data collision will occur when all slaves try
     /// to transmit at the same time (open drain will produce a wired AND
     /// result).
-    fn read_rom(&mut self) -> Result<Rom, Error<T::Error>>;
+    fn read_rom(&mut self) -> Result<Rom, AError<T::Error>>;
 
     /// Match ROM command
     ///
@@ -35,7 +35,7 @@ pub trait RomCommands<T: ErrorType> {
     /// following memory function command. All slaves that do not match the
     /// 64-bit ROM sequence will wait for a reset pulse. This command can be
     /// used with a single or multiple devices on the bus.
-    fn match_rom(&mut self, rom: Rom) -> Result<(), Error<T::Error>>;
+    fn match_rom(&mut self, rom: Rom) -> Result<(), AError<T::Error>>;
 
     /// Skip ROM command
     ///
@@ -45,7 +45,7 @@ pub trait RomCommands<T: ErrorType> {
     /// command is issued following the Skip ROM command, data collision will
     /// occur on the bus as multiple slaves transmit simultaneously (open drain
     /// pulldowns will produce a wired AND result).
-    fn skip_rom(&mut self) -> Result<(), Error<T::Error>>;
+    fn skip_rom(&mut self) -> Result<(), AError<T::Error>>;
 
     /// Search ROM command
     ///
@@ -53,7 +53,7 @@ pub trait RomCommands<T: ErrorType> {
     /// number of devices on the 1-Wire bus or their 64-bit ROM codes. The
     /// search ROM command allows the bus master to use a process of elimination
     /// to identify the 64-bit ROM codes of all slave devices on the bus.
-    fn search_rom(&mut self) -> Result<Rom, Error<T::Error>>;
+    fn search_rom(&mut self) -> Result<Rom, AError<T::Error>>;
 
     /// Search alarm command
     ///
@@ -61,34 +61,34 @@ pub trait RomCommands<T: ErrorType> {
     /// number of devices on the 1-Wire bus or their 64-bit ROM codes. The
     /// search ROM command allows the bus master to use a process of elimination
     /// to identify the 64-bit ROM codes of all slave devices on the bus.
-    fn search_alarm(&self) -> Result<(), Error<T::Error>>;
+    fn search_alarm(&self) -> Result<(), AError<T::Error>>;
 }
 
 impl<T: InputPin + OutputPin + ErrorType, U: DelayNs> RomCommands<T> for Driver<T, U> {
-    fn read_rom(&mut self) -> Result<Rom, Error<T::Error>> {
+    fn read_rom(&mut self) -> Result<Rom, AError<T::Error>> {
         self.write_byte(COMMAND_ROM_READ)?;
         let mut bytes = [0; 8];
         self.read_bytes(&mut bytes)?;
         Ok(bytes.try_into()?)
     }
 
-    fn match_rom(&mut self, rom: Rom) -> Result<(), Error<T::Error>> {
+    fn match_rom(&mut self, rom: Rom) -> Result<(), AError<T::Error>> {
         self.write_byte(COMMAND_ROM_MATCH)?;
         let bytes: [u8; 8] = rom.into();
         self.write_bytes(&bytes)?;
         Ok(())
     }
 
-    fn skip_rom(&mut self) -> Result<(), Error<T::Error>> {
+    fn skip_rom(&mut self) -> Result<(), AError<T::Error>> {
         self.write_byte(COMMAND_ROM_SKIP)?;
         Ok(())
     }
 
-    fn search_rom(&mut self) -> Result<Rom, Error<T::Error>> {
+    fn search_rom(&mut self) -> Result<Rom, AError<T::Error>> {
         // All transactions on the 1-Wire bus begin with an initialization
         // sequence.
         if !self.initialization()? {
-            Err(Ds18b20Error::NoAttachedDevices)?;
+            Err(Error::NoAttachedDevices)?;
         }
         self.write_byte(COMMAND_ROM_SEARCH)?;
         let mut rom = 0;
@@ -123,13 +123,13 @@ impl<T: InputPin + OutputPin + ErrorType, U: DelayNs> RomCommands<T> for Driver<
                     self.write_bit(true)?;
                 }
                 // `0b11`: There are no devices attached to the 1-Wire bus.
-                NONE => Err(Ds18b20Error::NoAttachedDevices)?,
+                NONE => Err(Error::NoAttachedDevices)?,
             }
         }
         Ok(rom.try_into()?)
     }
 
-    fn search_alarm(&self) -> Result<(), Error<T::Error>> {
+    fn search_alarm(&self) -> Result<(), AError<T::Error>> {
         unimplemented!()
     }
 }
